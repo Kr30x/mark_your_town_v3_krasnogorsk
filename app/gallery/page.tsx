@@ -22,10 +22,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Trash2, Search, MapPin, Square } from 'lucide-react'
+import { Trash2, Search, MapPin, Square, Download } from 'lucide-react'
 import { tasks } from '@/lib/tasks'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { TaskResult, Session } from '@/lib/storage'
+import { saveAs } from 'file-saver'
+import JSZip from 'jszip'
 
 // Dynamically import TaskMapDisplay with ssr disabled
 const TaskMapDisplay = dynamic(
@@ -112,6 +114,24 @@ const GalleryPage: React.FC = () => {
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
+  // Add this new function to handle the download
+  const handleDownloadAllSessions = async () => {
+    try {
+      const zip = new JSZip()
+      
+      sessions.forEach((session) => {
+        const sessionData = JSON.stringify(session, null, 2)
+        zip.file(`${session.id}.json`, sessionData)
+      })
+      
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, 'all_sessions.zip')
+    } catch (error) {
+      console.error('Error downloading sessions:', error)
+      // You might want to show an error message to the user here
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="w-full h-[50vh] flex items-center justify-center">
@@ -126,9 +146,18 @@ const GalleryPage: React.FC = () => {
     <ErrorBoundary fallback={<div>Something went wrong. Please try again later.</div>}>
       <div className="container mx-auto py-8 px-4 max-w-5xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-6">
-            Галерея сохраненных результатов
-          </h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">
+              Галерея сохраненных результатов
+            </h1>
+            <Button
+              onClick={handleDownloadAllSessions}
+              disabled={sessions.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Скачать все
+            </Button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
